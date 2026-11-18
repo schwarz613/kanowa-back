@@ -1,5 +1,6 @@
 package com.kanowa.entity
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
 import java.time.LocalDateTime
 import java.util.UUID
@@ -10,6 +11,11 @@ data class CreditEntity(
     @Id
     @Column(length = 36)
     var id: String = UUID.randomUUID().toString(),
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore
+    var user: UserEntity? = null,
 
     @Column(nullable = false)
     var title: String = "",

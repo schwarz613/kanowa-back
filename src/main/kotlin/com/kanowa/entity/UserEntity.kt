@@ -1,5 +1,6 @@
 package com.kanowa.entity
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -20,5 +21,13 @@ data class UserEntity(
     var password: String = "",
 
     @Column(nullable = false)
-    var createdAt: LocalDateTime = LocalDateTime.now()
+    var createdAt: LocalDateTime = LocalDateTime.now(),
+
+    @OneToMany(mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true)
+    @JsonIgnore
+    var credits: MutableList<CreditEntity> = mutableListOf(),
+
+    @OneToMany(mappedBy = "user", cascade = [CascadeType.ALL], orphanRemoval = true)
+    @JsonIgnore
+    var debits: MutableList<DebitEntity> = mutableListOf()
 )

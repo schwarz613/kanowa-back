@@ -30,8 +30,17 @@ class AuthController(
     }
 
     @GetMapping("/me")
-    fun me(@RequestParam(required = false, defaultValue = "usuario@kanowa.com") email: String): ResponseEntity<UserResponse> {
-        val user = userService.getUserByEmail(email)
+    fun me(
+        @RequestParam(required = false) email: String?,
+        @RequestHeader(value = "X-User-Id", required = false) userId: Long?
+    ): ResponseEntity<UserResponse> {
+        val user = when {
+            !email.isNullOrBlank() -> userService.getUserByEmail(email)
+            userId != null -> userService.getUserById(userId)
+            else -> throw org.springframework.web.server.ResponseStatusException(
+                HttpStatus.BAD_REQUEST, "Informe o parâmetro email ou o cabeçalho X-User-Id"
+            )
+        }
         return ResponseEntity.ok(user)
     }
 }

@@ -8,7 +8,8 @@ data class CreateCreditRequest(
     val status: String? = "CONCLUÍDO",
     val category: String? = "Receita Operacional",
     val iconType: String? = "CORPORATE",
-    val date: String? = null
+    val date: String? = null,
+    val userId: Long? = null
 )
 
 data class UpdateCreditRequest(
@@ -31,5 +32,6 @@ data class CreditResponse(
     val frequency: String,
     val category: String,
     val iconType: String,
-    val date: String
+    val date: String,
+    val userId: Long? = null
 )

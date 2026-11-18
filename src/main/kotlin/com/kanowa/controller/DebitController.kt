@@ -15,41 +15,67 @@ class DebitController(
     private val debitService: DebitService
 ) {
     @GetMapping
-    fun getAllDebits(): ResponseEntity<List<DebitResponse>> {
-        val list = debitService.getAllDebits()
+    fun getAllDebits(
+        @RequestHeader(value = "X-User-Id", required = false) userIdHeader: Long?,
+        @RequestParam(value = "userId", required = false) userIdParam: Long?
+    ): ResponseEntity<List<DebitResponse>> {
+        val userId = userIdParam ?: userIdHeader
+        val list = debitService.getAllDebits(userId)
         return ResponseEntity.ok(list)
     }
 
     @GetMapping("/{id}")
-    fun getDebitById(@PathVariable id: String): ResponseEntity<DebitResponse> {
-        val debit = debitService.getDebitById(id)
+    fun getDebitById(
+        @PathVariable id: String,
+        @RequestHeader(value = "X-User-Id", required = false) userIdHeader: Long?,
+        @RequestParam(value = "userId", required = false) userIdParam: Long?
+    ): ResponseEntity<DebitResponse> {
+        val userId = userIdParam ?: userIdHeader
+        val debit = debitService.getDebitById(id, userId)
         return ResponseEntity.ok(debit)
     }
 
     @PostMapping
-    fun createDebit(@RequestBody request: CreateDebitRequest): ResponseEntity<DebitResponse> {
-        val created = debitService.createDebit(request)
+    fun createDebit(
+        @RequestBody request: CreateDebitRequest,
+        @RequestHeader(value = "X-User-Id", required = false) userIdHeader: Long?,
+        @RequestParam(value = "userId", required = false) userIdParam: Long?
+    ): ResponseEntity<DebitResponse> {
+        val userId = userIdParam ?: userIdHeader ?: request.userId
+        val created = debitService.createDebit(request, userId)
         return ResponseEntity.status(HttpStatus.CREATED).body(created)
     }
 
     @PutMapping("/{id}")
     fun updateDebit(
         @PathVariable id: String,
-        @RequestBody request: UpdateDebitRequest
+        @RequestBody request: UpdateDebitRequest,
+        @RequestHeader(value = "X-User-Id", required = false) userIdHeader: Long?,
+        @RequestParam(value = "userId", required = false) userIdParam: Long?
     ): ResponseEntity<DebitResponse> {
-        val updated = debitService.updateDebit(id, request)
+        val userId = userIdParam ?: userIdHeader
+        val updated = debitService.updateDebit(id, request, userId)
         return ResponseEntity.ok(updated)
     }
 
     @DeleteMapping("/{id}")
-    fun deleteDebit(@PathVariable id: String): ResponseEntity<Void> {
-        debitService.deleteDebit(id)
+    fun deleteDebit(
+        @PathVariable id: String,
+        @RequestHeader(value = "X-User-Id", required = false) userIdHeader: Long?,
+        @RequestParam(value = "userId", required = false) userIdParam: Long?
+    ): ResponseEntity<Void> {
+        val userId = userIdParam ?: userIdHeader
+        debitService.deleteDebit(id, userId)
         return ResponseEntity.noContent().build()
     }
 
     @GetMapping("/total")
-    fun getTotalMonthlyDebits(): ResponseEntity<Map<String, Double>> {
-        val total = debitService.getTotalMonthlyDebits()
+    fun getTotalMonthlyDebits(
+        @RequestHeader(value = "X-User-Id", required = false) userIdHeader: Long?,
+        @RequestParam(value = "userId", required = false) userIdParam: Long?
+    ): ResponseEntity<Map<String, Double>> {
+        val userId = userIdParam ?: userIdHeader
+        val total = debitService.getTotalMonthlyDebits(userId)
         return ResponseEntity.ok(mapOf("totalMonthlyDebits" to total))
     }
 }

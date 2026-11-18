@@ -4,10 +4,7 @@ import com.kanowa.dto.FinancialSummaryResponse
 import com.kanowa.dto.TransactionResponse
 import com.kanowa.service.DashboardService
 import org.springframework.http.ResponseEntity
-import org.springframework.web.bind.annotation.CrossOrigin
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/api/dashboard")
@@ -16,14 +13,22 @@ class DashboardController(
     private val dashboardService: DashboardService
 ) {
     @GetMapping("/summary")
-    fun getSummary(): ResponseEntity<FinancialSummaryResponse> {
-        val summary = dashboardService.getFinancialSummary()
+    fun getSummary(
+        @RequestHeader(value = "X-User-Id", required = false) userIdHeader: Long?,
+        @RequestParam(value = "userId", required = false) userIdParam: Long?
+    ): ResponseEntity<FinancialSummaryResponse> {
+        val userId = userIdParam ?: userIdHeader
+        val summary = dashboardService.getFinancialSummary(userId)
         return ResponseEntity.ok(summary)
     }
 
     @GetMapping("/transactions")
-    fun getTransactions(): ResponseEntity<List<TransactionResponse>> {
-        val transactions = dashboardService.getRecentTransactions()
+    fun getTransactions(
+        @RequestHeader(value = "X-User-Id", required = false) userIdHeader: Long?,
+        @RequestParam(value = "userId", required = false) userIdParam: Long?
+    ): ResponseEntity<List<TransactionResponse>> {
+        val userId = userIdParam ?: userIdHeader
+        val transactions = dashboardService.getRecentTransactions(userId)
         return ResponseEntity.ok(transactions)
     }
 }

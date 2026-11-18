@@ -2,24 +2,31 @@ package com.kanowa.service
 
 import com.kanowa.dto.FinancialSummaryResponse
 import com.kanowa.dto.TransactionResponse
+import com.kanowa.entity.CreditEntity
+import com.kanowa.entity.DebitEntity
 import com.kanowa.repository.CreditRepository
 import com.kanowa.repository.DebitRepository
 import org.springframework.stereotype.Service
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @Service
 class DashboardService(
     private val creditRepository: CreditRepository,
     private val debitRepository: DebitRepository
 ) {
-    private val dateFormatter = DateTimeFormatter.ofPattern("dd 'de' MMM, yyyy", Locale("pt", "BR"))
+    fun getFinancialSummary(userId: Long? = null): FinancialSummaryResponse {
+        val totalRevenue = if (userId != null) {
+            creditRepository.getTotalMonthlyCreditsByUserId(userId)
+        } else {
+            creditRepository.getTotalMonthlyCredits()
+        }
 
-    fun getFinancialSummary(): FinancialSummaryResponse {
-        val totalRevenue = creditRepository.getTotalMonthlyCredits()
-        val totalExpenses = debitRepository.getTotalMonthlyDebits()
-        val baseCapital = 142500.00
-        val totalBalance = baseCapital + totalRevenue - totalExpenses
+        val totalExpenses = if (userId != null) {
+            debitRepository.getTotalMonthlyDebitsByUserId(userId)
+        } else {
+            debitRepository.getTotalMonthlyDebits()
+        }
+
+        val totalBalance = totalRevenue - totalExpenses
 
         val savingsRate = if (totalRevenue > 0) {
             ((totalRevenue - totalExpenses) / totalRevenue * 100).coerceAtLeast(0.0)
@@ -27,22 +34,38 @@ class DashboardService(
             0.0
         }
 
-        val activeDebitsCount = debitRepository.countByStatusNot("PAGO")
+        val activeDebitsCount = if (userId != null) {
+            debitRepository.countByUserIdAndStatusNot(userId, "PAGO")
+        } else {
+            debitRepository.countByStatusNot("PAGO")
+        }
 
         return FinancialSummaryResponse(
             totalBalance = totalBalance,
-            balanceGrowthPercentage = 4.2,
-            monthlyRevenue = if (totalRevenue > 0) totalRevenue else 12840.00,
-            revenueGrowthPercentage = 12.0,
-            monthlyExpenses = if (totalExpenses > 0) totalExpenses else 4320.00,
-            expensesReductionPercentage = 2.4,
-            savingsRatePercentage = if (savingsRate > 0) savingsRate else 68.4,
-            activeDebitsCount = if (activeDebitsCount > 0) activeDebitsCount else 4
+            balanceGrowthPercentage = 0.0,
+            monthlyRevenue = totalRevenue,
+            revenueGrowthPercentage = 0.0,
+            monthlyExpenses = totalExpenses,
+            expensesReductionPercentage = 0.0,
+            savingsRatePercentage = savingsRate,
+            activeDebitsCount = activeDebitsCount
         )
     }
 
-    fun getRecentTransactions(): List<TransactionResponse> {
-        val creditTx = creditRepository.findAllByOrderByCreatedAtDesc().take(10).map { c ->
+    fun getRecentTransactions(userId: Long? = null): List<TransactionResponse> {
+        val credits: List<CreditEntity> = if (userId != null) {
+            creditRepository.findAllByUserIdOrderByCreatedAtDesc(userId)
+        } else {
+            creditRepository.findAllByOrderByCreatedAtDesc()
+        }
+
+        val debits: List<DebitEntity> = if (userId != null) {
+            debitRepository.findAllByUserIdOrderByCreatedAtDesc(userId)
+        } else {
+            debitRepository.findAllByOrderByCreatedAtDesc()
+        }
+
+        val creditTx = credits.take(10).map { c ->
             TransactionResponse(
                 id = "credit-" + c.id,
                 title = c.title,
@@ -59,7 +82,7 @@ class DashboardService(
             )
         }
 
-        val debitTx = debitRepository.findAllByOrderByCreatedAtDesc().take(10).map { d ->
+        val debitTx = debits.take(10).map { d ->
             TransactionResponse(
                 id = "debit-" + d.id,
                 title = d.title,

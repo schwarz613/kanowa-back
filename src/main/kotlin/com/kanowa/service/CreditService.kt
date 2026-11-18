@@ -5,6 +5,7 @@ import com.kanowa.dto.CreditResponse
 import com.kanowa.dto.UpdateCreditRequest
 import com.kanowa.entity.CreditEntity
 import com.kanowa.repository.CreditRepository
+import com.kanowa.repository.UserRepository
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
@@ -14,24 +15,45 @@ import java.util.Locale
 
 @Service
 class CreditService(
-    private val creditRepository: CreditRepository
+    private val creditRepository: CreditRepository,
+    private val userRepository: UserRepository
 ) {
     private val dateFormatter = DateTimeFormatter.ofPattern("dd 'de' MMM, yyyy", Locale("pt", "BR"))
 
-    fun getAllCredits(): List<CreditResponse> {
-        return creditRepository.findAllByOrderByCreatedAtDesc().map { toResponse(it) }
+    fun getAllCredits(userId: Long? = null): List<CreditResponse> {
+        val list = if (userId != null) {
+            creditRepository.findAllByUserIdOrderByCreatedAtDesc(userId)
+        } else {
+            creditRepository.findAllByOrderByCreatedAtDesc()
+        }
+        return list.map { toResponse(it) }
     }
 
-    fun getCreditById(id: String): CreditResponse {
+    fun getCreditById(id: String, userId: Long? = null): CreditResponse {
         val entity = creditRepository.findById(id).orElseThrow {
             ResponseStatusException(HttpStatus.NOT_FOUND, "Crédito não encontrado com id: $id")
+        }
+        if (userId != null && entity.user?.id != userId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso negado a este crédito.")
         }
         return toResponse(entity)
     }
 
-    fun createCredit(request: CreateCreditRequest): CreditResponse {
+    fun createCredit(request: CreateCreditRequest, targetUserId: Long? = null): CreditResponse {
+        val resolvedUserId = targetUserId ?: request.userId
+        val user = if (resolvedUserId != null) {
+            userRepository.findById(resolvedUserId).orElseThrow {
+                ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado com id: $resolvedUserId")
+            }
+        } else {
+            userRepository.findAll().firstOrNull() ?: throw ResponseStatusException(
+                HttpStatus.BAD_REQUEST, "Nenhum usuário cadastrado no sistema. Crie um usuário antes de adicionar créditos."
+            )
+        }
+
         val dateStr = request.date ?: LocalDate.now().format(dateFormatter)
         val entity = CreditEntity(
+            user = user,
             title = request.title.trim(),
             subtitle = request.subtitle ?: "Recebimento Corporativo",
             amount = request.amount,
@@ -45,9 +67,12 @@ class CreditService(
         return toResponse(saved)
     }
 
-    fun updateCredit(id: String, request: UpdateCreditRequest): CreditResponse {
+    fun updateCredit(id: String, request: UpdateCreditRequest, userId: Long? = null): CreditResponse {
         val entity = creditRepository.findById(id).orElseThrow {
             ResponseStatusException(HttpStatus.NOT_FOUND, "Crédito não encontrado com id: $id")
+        }
+        if (userId != null && entity.user?.id != userId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso negado a este crédito.")
         }
 
         request.title?.let { entity.title = it.trim() }
@@ -63,15 +88,22 @@ class CreditService(
         return toResponse(updated)
     }
 
-    fun deleteCredit(id: String) {
-        if (!creditRepository.existsById(id)) {
-            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Crédito não encontrado com id: $id")
+    fun deleteCredit(id: String, userId: Long? = null) {
+        val entity = creditRepository.findById(id).orElseThrow {
+            ResponseStatusException(HttpStatus.NOT_FOUND, "Crédito não encontrado com id: $id")
         }
-        creditRepository.deleteById(id)
+        if (userId != null && entity.user?.id != userId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Acesso negado a este crédito.")
+        }
+        creditRepository.delete(entity)
     }
 
-    fun getTotalMonthlyCredits(): Double {
-        return creditRepository.getTotalMonthlyCredits()
+    fun getTotalMonthlyCredits(userId: Long? = null): Double {
+        return if (userId != null) {
+            creditRepository.getTotalMonthlyCreditsByUserId(userId)
+        } else {
+            creditRepository.getTotalMonthlyCredits()
+        }
     }
 
     fun toResponse(entity: CreditEntity): CreditResponse {
@@ -84,7 +116,8 @@ class CreditService(
             frequency = entity.frequency,
             category = entity.category,
             iconType = entity.iconType,
-            date = entity.date
+            date = entity.date,
+            userId = entity.user?.id
         )
     }
 }

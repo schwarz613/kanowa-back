@@ -8,7 +8,8 @@ data class CreateDebitRequest(
     val status: String? = "PENDENTE",
     val isAlert: Boolean? = false,
     val iconType: String? = "HOME",
-    val dueDate: String? = null
+    val dueDate: String? = null,
+    val userId: Long? = null
 )
 
 data class UpdateDebitRequest(
@@ -31,5 +32,6 @@ data class DebitResponse(
     val isAlert: Boolean,
     val category: String,
     val iconType: String,
-    val dueDate: String
+    val dueDate: String,
+    val userId: Long? = null
 )
