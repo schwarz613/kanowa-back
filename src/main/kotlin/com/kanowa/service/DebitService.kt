@@ -8,6 +8,7 @@ import com.kanowa.repository.DebitRepository
 import com.kanowa.repository.UserRepository
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -20,6 +21,7 @@ class DebitService(
 ) {
     private val dateFormatter = DateTimeFormatter.ofPattern("dd 'de' MMM, yyyy", Locale("pt", "BR"))
 
+    @Transactional(readOnly = true)
     fun getAllDebits(userId: Long? = null): List<DebitResponse> {
         val list = if (userId != null) {
             debitRepository.findAllByUserIdOrderByCreatedAtDesc(userId)
@@ -29,6 +31,7 @@ class DebitService(
         return list.map { toResponse(it) }
     }
 
+    @Transactional(readOnly = true)
     fun getDebitById(id: String, userId: Long? = null): DebitResponse {
         val entity = debitRepository.findById(id).orElseThrow {
             ResponseStatusException(HttpStatus.NOT_FOUND, "Débito não encontrado com id: $id")
@@ -39,6 +42,7 @@ class DebitService(
         return toResponse(entity)
     }
 
+    @Transactional
     fun createDebit(request: CreateDebitRequest, targetUserId: Long? = null): DebitResponse {
         val resolvedUserId = targetUserId ?: request.userId
         val user = if (resolvedUserId != null) {
@@ -67,6 +71,7 @@ class DebitService(
         return toResponse(saved)
     }
 
+    @Transactional
     fun updateDebit(id: String, request: UpdateDebitRequest, userId: Long? = null): DebitResponse {
         val entity = debitRepository.findById(id).orElseThrow {
             ResponseStatusException(HttpStatus.NOT_FOUND, "Débito não encontrado com id: $id")
@@ -88,6 +93,7 @@ class DebitService(
         return toResponse(updated)
     }
 
+    @Transactional
     fun deleteDebit(id: String, userId: Long? = null) {
         val entity = debitRepository.findById(id).orElseThrow {
             ResponseStatusException(HttpStatus.NOT_FOUND, "Débito não encontrado com id: $id")
@@ -98,6 +104,7 @@ class DebitService(
         debitRepository.delete(entity)
     }
 
+    @Transactional(readOnly = true)
     fun getTotalMonthlyDebits(userId: Long? = null): Double {
         return if (userId != null) {
             debitRepository.getTotalMonthlyDebitsByUserId(userId)

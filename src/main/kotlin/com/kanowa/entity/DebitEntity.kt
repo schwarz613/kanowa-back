@@ -7,13 +7,13 @@ import java.util.UUID
 
 @Entity
 @Table(name = "debits")
-data class DebitEntity(
+class DebitEntity(
     @Id
     @Column(length = 36)
     var id: String = UUID.randomUUID().toString(),
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id", nullable = true)
     @JsonIgnore
     var user: UserEntity? = null,
 
@@ -43,4 +43,15 @@ data class DebitEntity(
 
     @Column(nullable = false)
     var createdAt: LocalDateTime = LocalDateTime.now()
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is DebitEntity) return false
+        return id == other.id
+    }
+
+    override fun hashCode(): Int = id.hashCode()
+
+    override fun toString(): String =
+        "DebitEntity(id=$id, title=$title, amount=$amount, status=$status)"
+}

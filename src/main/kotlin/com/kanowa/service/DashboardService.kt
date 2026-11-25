@@ -7,12 +7,14 @@ import com.kanowa.entity.DebitEntity
 import com.kanowa.repository.CreditRepository
 import com.kanowa.repository.DebitRepository
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class DashboardService(
     private val creditRepository: CreditRepository,
     private val debitRepository: DebitRepository
 ) {
+    @Transactional(readOnly = true)
     fun getFinancialSummary(userId: Long? = null): FinancialSummaryResponse {
         val totalRevenue = if (userId != null) {
             creditRepository.getTotalMonthlyCreditsByUserId(userId)
@@ -52,6 +54,7 @@ class DashboardService(
         )
     }
 
+    @Transactional(readOnly = true)
     fun getRecentTransactions(userId: Long? = null): List<TransactionResponse> {
         val credits: List<CreditEntity> = if (userId != null) {
             creditRepository.findAllByUserIdOrderByCreatedAtDesc(userId)

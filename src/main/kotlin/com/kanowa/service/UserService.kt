@@ -6,6 +6,7 @@ import com.kanowa.entity.UserEntity
 import com.kanowa.repository.UserRepository
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
 import java.time.format.DateTimeFormatter
 
@@ -15,6 +16,7 @@ class UserService(
 ) {
     private val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")
 
+    @Transactional
     fun createUser(request: CreateUserRequest): UserResponse {
         val email = request.email.trim().lowercase()
         if (userRepository.existsByEmail(email)) {
@@ -30,6 +32,7 @@ class UserService(
         return toResponse(saved)
     }
 
+    @Transactional(readOnly = true)
     fun getUserById(id: Long): UserResponse {
         val user = userRepository.findById(id).orElseThrow {
             ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado com id: $id")
@@ -37,6 +40,7 @@ class UserService(
         return toResponse(user)
     }
 
+    @Transactional(readOnly = true)
     fun getUserByEmail(email: String): UserResponse {
         val user = userRepository.findByEmail(email.trim().lowercase()) ?: throw ResponseStatusException(
             HttpStatus.NOT_FOUND, "Usuário não encontrado com e-mail: $email"
@@ -44,6 +48,7 @@ class UserService(
         return toResponse(user)
     }
 
+    @Transactional(readOnly = true)
     fun getAllUsers(): List<UserResponse> {
         return userRepository.findAll().map { toResponse(it) }
     }

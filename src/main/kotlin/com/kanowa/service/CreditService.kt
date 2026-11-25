@@ -8,6 +8,7 @@ import com.kanowa.repository.CreditRepository
 import com.kanowa.repository.UserRepository
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -20,6 +21,7 @@ class CreditService(
 ) {
     private val dateFormatter = DateTimeFormatter.ofPattern("dd 'de' MMM, yyyy", Locale("pt", "BR"))
 
+    @Transactional(readOnly = true)
     fun getAllCredits(userId: Long? = null): List<CreditResponse> {
         val list = if (userId != null) {
             creditRepository.findAllByUserIdOrderByCreatedAtDesc(userId)
@@ -29,6 +31,7 @@ class CreditService(
         return list.map { toResponse(it) }
     }
 
+    @Transactional(readOnly = true)
     fun getCreditById(id: String, userId: Long? = null): CreditResponse {
         val entity = creditRepository.findById(id).orElseThrow {
             ResponseStatusException(HttpStatus.NOT_FOUND, "Crédito não encontrado com id: $id")
@@ -39,6 +42,7 @@ class CreditService(
         return toResponse(entity)
     }
 
+    @Transactional
     fun createCredit(request: CreateCreditRequest, targetUserId: Long? = null): CreditResponse {
         val resolvedUserId = targetUserId ?: request.userId
         val user = if (resolvedUserId != null) {
@@ -67,6 +71,7 @@ class CreditService(
         return toResponse(saved)
     }
 
+    @Transactional
     fun updateCredit(id: String, request: UpdateCreditRequest, userId: Long? = null): CreditResponse {
         val entity = creditRepository.findById(id).orElseThrow {
             ResponseStatusException(HttpStatus.NOT_FOUND, "Crédito não encontrado com id: $id")
@@ -88,6 +93,7 @@ class CreditService(
         return toResponse(updated)
     }
 
+    @Transactional
     fun deleteCredit(id: String, userId: Long? = null) {
         val entity = creditRepository.findById(id).orElseThrow {
             ResponseStatusException(HttpStatus.NOT_FOUND, "Crédito não encontrado com id: $id")
@@ -98,6 +104,7 @@ class CreditService(
         creditRepository.delete(entity)
     }
 
+    @Transactional(readOnly = true)
     fun getTotalMonthlyCredits(userId: Long? = null): Double {
         return if (userId != null) {
             creditRepository.getTotalMonthlyCreditsByUserId(userId)

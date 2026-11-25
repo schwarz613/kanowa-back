@@ -5,6 +5,7 @@ import com.kanowa.dto.LoginResponse
 import com.kanowa.repository.UserRepository
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
 import java.util.UUID
 
@@ -13,6 +14,7 @@ class AuthService(
     private val userRepository: UserRepository,
     private val userService: UserService
 ) {
+    @Transactional(readOnly = true)
     fun login(request: LoginRequest): LoginResponse {
         val email = request.email.trim().lowercase()
         val user = userRepository.findByEmail(email)
